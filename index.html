@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raanix — Built to serve the community</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">RAAN<span>I</span>X</a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="products.html">Products</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="contact.html" class="nav-cta">Get in touch</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">Welcome to Raanix</div>
+      <h1>Built to serve<br>the <span class="accent">community.</span></h1>
+      <p>Raanix is a game studio dedicated to creating experiences for the
+        community — built with care, and built to last.</p>
+      <div class="btn-row">
+        <a href="products.html" class="btn btn-primary">See what's coming</a>
+        <a href="contact.html" class="btn btn-ghost">Get in touch</a>
+      </div>
+    </div>
+    <div class="doorway-wrap">
+      <div class="doorway">
+        <div class="r-cut">R</div>
+      </div>
+      <div class="doorway-floor"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Currently in development</div>
+      <h2>The first project</h2>
+    </div>
+    <div class="dev-card">
+      <div>
+        <span class="tag">In progress</span>
+        <h3>Project One</h3>
+        <p>Our first release is currently in development. Details, screenshots,
+          and a release window will be shared here as we get closer to launch.</p>
+      </div>
+      <a href="products.html" class="btn btn-ghost">Follow progress</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container footer-row">
+    <p>&copy; 2026 Raanix. All rights reserved.</p>
+    <a href="mailto:sebitstudio@gmail.com" class="footer-email">sebitstudio@gmail.com</a>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('navToggle').addEventListener('click', function(){
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+</script>
+
+</body>
+</html>
