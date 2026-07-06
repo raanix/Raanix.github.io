@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legacy Road</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a1f;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      color: white;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+    .menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 10;
+    }
+    h1 {
+      font-size: 3.5em;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px #00ffff;
+      color: #ff3366;
+    }
+    button {
+      display: block;
+      margin: 15px auto;
+      padding: 15px 40px;
+      font-size: 1.4em;
+      background: rgba(255, 51, 102, 0.9);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      width: 280px;
+      box-shadow: 0 0 15px #ff3366;
+    }
+    button:hover {
+      background: #ff6699;
+      transform: scale(1.05);
+    }
+    #settings {
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <div class="menu" id="mainMenu">
+    <h1>LEGACY ROAD</h1>
+    <p style="margin-bottom:30px; color:#aaa;">For Dad. For the Finish Line.</p>
+    
+    <button onclick="startGame()">START NEW GAME</button>
+    <button onclick="continueGame()">CONTINUE</button>
+    <button onclick="showSettings()">SETTINGS</button>
+  </div>
+
+  <div class="menu" id="settings" style="display:none;">
+    <h2>Settings</h2>
+    <label>Master Volume: <span id="volumeValue">80</span>%</label><br>
+    <input type="range" id="volumeSlider" min="0" max="100" value="80" style="width:300px;">
+    <br><br>
+    <button onclick="saveSettings()">Back to Menu</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Simple background for menu
+    function drawMenuBackground() {
+      ctx.fillStyle = '#0a0a1f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Road lines effect
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 4;
+      for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(100 + i*80, 100);
+        ctx.lineTo(150 + i*70, 500);
+        ctx.stroke();
+      }
+    }
+
+    drawMenuBackground();
+
+    // Button functions
+    function startGame() {
+      alert("Starting New Game...\n(First race scene coming next!)");
+      // We'll replace this with actual game later
+    }
+
+    function continueGame() {
+      alert("Loading saved progress... (Not implemented yet)");
+    }
+
+    function showSettings() {
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('settings').style.display = 'block';
+    }
+
+    function saveSettings() {
+      const volume = document.getElementById('volumeSlider').value;
+      document.getElementById('volumeValue').textContent = volume;
+      alert("Settings Saved! Volume: " + volume + "%");
+      document.getElementById('settings').style.display = 'none';
+      document.getElementById('mainMenu').style.display = 'block';
+    }
+
+    // Volume slider live update
+    document.getElementById('volumeSlider').addEventListener('input', function() {
+      document.getElementById('volumeValue').textContent = this.value;
+    });
+  </script>
+</body>
+</html>
