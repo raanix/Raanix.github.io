@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Long Walk — Raanix Games</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI', Arial, sans-serif; }
+  canvas { display:block; touch-action:none; }
+
+  #splash{
+    position:fixed; inset:0; z-index:100; background:#0a0a0b;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  }
+  #splash .studio{ font-size:1.1rem; letter-spacing:0.35em; color:#7a725f; text-transform:uppercase; opacity:0; animation: fadeInOut 2.6s ease forwards; }
+  #splash .studio b{ color:#e8b968; }
+  #splash .gametitle{ font-size:2.6rem; letter-spacing:0.05em; color:#f2ede2; margin-top:1rem; opacity:0; animation: fadeIn 1.2s ease 2.4s forwards; }
+  #splash .gamesub{ font-size:0.9rem; color:#948d80; margin-top:0.6rem; opacity:0; animation: fadeIn 1.2s ease 3.1s forwards; }
+  #splash .enter-btn{
+    margin-top:2.2rem; background:#cf9d4b; color:#0a0a0b; border:none; font-weight:700;
+    padding:0.9rem 2.2rem; border-radius:6px; font-size:0.95rem; letter-spacing:0.04em;
+    opacity:0; animation: fadeIn 1s ease 3.6s forwards; cursor:pointer;
+  }
+  @keyframes fadeInOut{ 0%{opacity:0;} 15%{opacity:1;} 85%{opacity:1;} 100%{opacity:0;} }
+  @keyframes fadeIn{ to{ opacity:1; } }
+
+  #story{ position:fixed; inset:0; z-index:40; pointer-events:none; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8vh; }
+  #story .line{
+    background:rgba(8,8,9,0.55); color:#f2ede2; padding:0.9rem 1.6rem; border-radius:6px;
+    font-size:1rem; max-width:80vw; text-align:center; opacity:0; transition:opacity 0.6s ease;
+    border:1px solid rgba(232,185,104,0.25);
+  }
+  #story .line.show{ opacity:1; }
+
+  /* ---------- HUD ---------- */
+  #hud{ position:fixed; inset:0; z-index:10; display:none; pointer-events:none; }
+  #hud.active{ display:block; }
+  .bars{ position:absolute; top:14px; left:14px; width:190px; display:flex; flex-direction:column; gap:6px; }
+  .bar-label{ font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase; color:#c9a24b; margin-bottom:2px; }
+  .bar-bg{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:3px; height:9px; overflow:hidden; }
+  .bar-fill{ height:100%; transition:width 0.2s ease; }
+  #healthFill{ background:linear-gradient(90deg,#8a2b2b,#d4433f); }
+  #staminaFill{ background:linear-gradient(90deg,#2b6b8a,#43a0d4); }
+
+  #inventoryRow{
+    position:absolute; top:100px; left:14px; display:flex; gap:8px;
+  }
+  .inv-chip{
+    background:rgba(10,10,12,0.6); border:1px solid rgba(207,157,75,0.3); color:#f2ede2;
+    padding:0.3rem 0.6rem; border-radius:5px; font-size:0.72rem;
+  }
+
+  #timeLabel{ background:rgba(10,10,12,0.55); border:1px solid rgba(207,157,75,0.3); padding:0.4rem 0.8rem; border-radius:5px; color:#f2ede2; font-size:0.85rem; }
+  #timeWrap{ position:absolute; top:14px; right:158px; }
+
+  #minimapWrap{
+    position:absolute; top:14px; right:14px; width:130px; height:130px;
+    border-radius:10px; overflow:hidden; border:2px solid rgba(207,157,75,0.45);
+    background:rgba(10,10,12,0.65);
+  }
+  #minimapCanvas{ width:100%; height:100%; display:block; }
+
+  #promptBox{
+    position:absolute; bottom:110px; left:50%; transform:translateX(-50%);
+    background:rgba(10,10,12,0.7); border:1px solid rgba(232,185,104,0.4); color:#f2ede2;
+    padding:0.6rem 1.1rem; border-radius:6px; font-size:0.85rem; display:none; white-space:nowrap;
+  }
+  #promptBox.show{ display:block; }
+
+  /* ---------- controls ---------- */
+  #controls{ position:fixed; inset:0; z-index:15; display:none; }
+  #controls.active{ display:block; }
+  #joystick-zone{ position:absolute; left:0; bottom:0; width:42%; height:50%; pointer-events:auto; }
+  #joystick-base{ position:absolute; width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); display:none; }
+  #joystick-stick{ position:absolute; width:46px; height:46px; border-radius:50%; background:rgba(207,157,75,0.55); border:1px solid rgba(232,185,104,0.8); top:50%; left:50%; transform:translate(-50%,-50%); }
+  #look-zone{ position:absolute; right:0; bottom:0; width:58%; height:100%; pointer-events:auto; }
+  .act-btn{
+    position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:0.7rem; letter-spacing:0.03em; text-transform:uppercase; pointer-events:auto; z-index:20;
+    background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.25); text-align:center;
+  }
+  #jumpBtn{ width:72px; height:72px; right:24px; bottom:180px; background:rgba(207,157,75,0.28); border-color:rgba(232,185,104,0.7); }
+  #sprintBtn{ width:60px; height:60px; right:118px; bottom:140px; }
+  #interactBtn{ width:60px; height:60px; right:24px; bottom:100px; background:rgba(46,149,99,0.28); border-color:rgba(126,217,87,0.7); }
+  #craftBtn{ width:56px; height:56px; right:100px; bottom:50px; background:rgba(207,157,60,0.25); border-color:rgba(232,185,104,0.6); font-size:0.62rem; }
+
+  #objective{
+    position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:30;
+    background:rgba(10,10,12,0.65); border:1px solid rgba(232,185,104,0.35); color:#e8b968;
+    padding:0.5rem 1.1rem; border-radius:5px; font-size:0.8rem; display:none;
+  }
+  #objective.show{ display:block; }
+
+  /* ---------- crafting panel ---------- */
+  #craftPanel{
+    position:fixed; inset:0; z-index:50; background:rgba(6,6,7,0.85);
+    display:none; align-items:center; justify-content:center;
+  }
+  #craftPanel.show{ display:flex; }
+  .craft-box{
+    background:#141210; border:1px solid rgba(207,157,75,0.35); border-radius:12px;
+    padding:1.6rem; width:280px; color:#f2ede2;
+  }
+  .craft-box h3{ color:#e8b968; margin-bottom:1rem; font-size:1.1rem; }
+  .craft-item{
+    display:flex; justify-content:space-between; align-items:center; background:#1d1a16;
+    border-radius:8px; padding:0.7rem 0.9rem; margin-bottom:0.6rem;
+  }
+  .craft-item .name{ font-size:0.9rem; }
+  .craft-item .cost{ font-size:0.7rem; color:#948d80; }
+  .craft-item button{
+    background:#cf9d4b; border:none; color:#0a0a0b; font-weight:700; font-size:0.75rem;
+    padding:0.4rem 0.8rem; border-radius:5px;
+  }
+  .craft-item button:disabled{ opacity:0.35; }
+  #closeCraft{
+    width:100%; margin-top:0.6rem; background:transparent; border:1px solid #4a463c;
+    color:#f2ede2; padding:0.6rem; border-radius:6px; font-size:0.85rem;
+  }
+
+  /* ---------- game over ---------- */
+  #gameOver{
+    position:fixed; inset:0; z-index:60; background:rgba(6,6,7,0.95);
+    display:none; align-items:center; justify-content:center; flex-direction:column; text-align:center;
+    color:#f2ede2;
+  }
+  #gameOver.show{ display:flex; }
+  #gameOver h1{ font-size:2.2rem; color:#d4433f; margin-bottom:0.6rem; }
+  #gameOver p{ color:#948d80; margin-bottom:1.6rem; }
+  #gameOver button{
+    background:#cf9d4b; border:none; color:#0a0a0b; font-weight:700; padding:0.85rem 2rem;
+    border-radius:6px; font-size:0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="studio">A <b>RAANIX</b> GAMES production</div>
+  <div class="gametitle">THE LONG WALK</div>
+  <div class="gamesub">A survival story of the savanna</div>
+  <button class="enter-btn" id="enterBtn">Begin</button>
+</div>
+
+<div id="story"><div class="line" id="storyLine"></div></div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="hud">
+  <div class="bars">
+    <div>
+      <div class="bar-label">Health</div>
+      <div class="bar-bg"><div class="bar-fill" id="healthFill" style="width:100%"></div></div>
+    </div>
+    <div>
+      <div class="bar-label">Stamina</div>
+      <div class="bar-bg"><div class="bar-fill" id="staminaFill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div id="inventoryRow">
+    <div class="inv-chip">🪵 <span id="woodCount">0</span></div>
+    <div class="inv-chip">🪨 <span id="stoneCount">0</span></div>
+    <div class="inv-chip">🔱 <span id="spearCount">0</span></div>
+  </div>
+  <div id="timeWrap"><div id="timeLabel">☀ Day</div></div>
+  <div id="minimapWrap"><canvas id="minimapCanvas" width="130" height="130"></canvas></div>
+  <div id="promptBox"></div>
+</div>
+
+<div id="objective">Find your way home. Survive.</div>
+
+<div id="controls">
+  <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
+  <div id="look-zone"></div>
+  <div class="act-btn" id="jumpBtn">Jump</div>
+  <div class="act-btn" id="sprintBtn">Sprint</div>
+  <div class="act-btn" id="interactBtn">Use</div>
+  <div class="act-btn" id="craftBtn">Craft</div>
+</div>
+
+<div id="craftPanel">
+  <div class="craft-box">
+    <h3>Craft</h3>
+    <div class="craft-item">
+      <div>
+        <div class="name">Spear</div>
+        <div class="cost">2 Wood + 1 Stone</div>
+      </div>
+      <button id="craftSpearBtn">Craft</button>
+    </div>
+    <button id="closeCraft">Close</button>
+  </div>
+</div>
+
+<div id="gameOver">
+  <h1>You Didn't Make It</h1>
+  <p>The savanna claimed you this time.</p>
+  <button id="respawnBtn">Try Again</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 500);
+  const renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  document.body.appendChild(renderer.domElement);
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  scene.background = new THREE.Color(0x8fc4e8);
+  scene.fog = new THREE.Fog(0x8fc4e8, 40, 180);
+
+  const sun = new THREE.DirectionalLight(0xfff3d6, 1.2);
+  sun.position.set(40, 60, 20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.left=-60; sun.shadow.camera.right=60; sun.shadow.camera.top=60; sun.shadow.camera.bottom=-60;
+  scene.add(sun);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+  const hemi = new THREE.HemisphereLight(0xbfe0f5, 0x8a6a3a, 0.5);
+  scene.add(hemi);
+
+  function makeCapsule(radius, length, material){
+    const g = new THREE.Group();
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 8), material);
+    const capTop = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 8), material);
+    capTop.position.y = length/2;
+    const capBottom = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 8), material);
+    capBottom.position.y = -length/2;
+    g.add(cyl, capTop, capBottom);
+    g.children.forEach(c => c.castShadow = true);
+    return g;
+  }
+
+  const groundMat = new THREE.MeshStandardMaterial({ color:0xc7a35f, roughness:1 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400,1,1), groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const forestCenter = { x:-60, z:-60, r:45 };
+  const forestGround = new THREE.Mesh(new THREE.CircleGeometry(forestCenter.r, 24), new THREE.MeshStandardMaterial({ color:0x3a4a2c, roughness:1 }));
+  forestGround.rotation.x = -Math.PI/2;
+  forestGround.position.set(forestCenter.x, 0.015, forestCenter.z);
+  scene.add(forestGround);
+
+  for (let i=0;i<40;i++){
+    const g = new THREE.Mesh(new THREE.CircleGeometry(3+Math.random()*4, 8), new THREE.MeshStandardMaterial({ color:0x8fae4a, roughness:1 }));
+    g.rotation.x = -Math.PI/2;
+    g.position.set((Math.random()-0.5)*180, 0.02, (Math.random()-0.5)*180);
+    scene.add(g);
+  }
+
+  const river = new THREE.Mesh(new THREE.PlaneGeometry(14, 200), new THREE.MeshStandardMaterial({ color:0x3a7fa0, roughness:0.3, metalness:0.2 }));
+  river.rotation.x = -Math.PI/2;
+  river.position.set(50, 0.03, 0);
+  scene.add(river);
+
+  function inForest(x,z){ return Math.hypot(x-forestCenter.x, z-forestCenter.z) < forestCenter.r; }
+
+  const trees = [];
+  function makeAcacia(x,z, scale=1){
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25*scale,0.4*scale,4*scale,7), new THREE.MeshStandardMaterial({ color:0x5a4530, roughness:1 }));
+    trunk.position.y = 2*scale; trunk.castShadow = true;
+    const canopy = new THREE.Mesh(new THREE.ConeGeometry(3.2*scale, 1.1*scale, 8), new THREE.MeshStandardMaterial({ color:0x4f7a3a, roughness:1 }));
+    canopy.position.y = 4.3*scale; canopy.scale.y = 0.4; canopy.castShadow = true;
+    g.add(trunk, canopy);
+    g.position.set(x,0,z);
+    g.userData = { climbable:true, radius:2.2*scale, height:4*scale, type:'acacia', woodCooldown:0 };
+    scene.add(g); trees.push(g);
+    return g;
+  }
+  function makeForestTree(x,z, scale=1){
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3*scale,0.5*scale,6*scale,7), new THREE.MeshStandardMaterial({ color:0x3a2c1e, roughness:1 }));
+    trunk.position.y = 3*scale; trunk.castShadow = true;
+    const canopy = new THREE.Mesh(new THREE.ConeGeometry(2.2*scale, 4.5*scale, 8), new THREE.MeshStandardMaterial({ color:0x1f3d22, roughness:1 }));
+    canopy.position.y = 6.5*scale; canopy.castShadow = true;
+    g.add(trunk, canopy);
+    g.position.set(x,0,z);
+    g.userData = { climbable:true, radius:1.8*scale, height:6*scale, type:'forest', woodCooldown:0 };
+    scene.add(g); trees.push(g);
+    return g;
+  }
+
+  for (let i=0;i<18;i++){
+    const x=(Math.random()-0.5)*160, z=(Math.random()-0.5)*160;
+    if (Math.abs(x-50) < 10) continue;
+    if (inForest(x,z)) continue;
+    makeAcacia(x,z, 0.85+Math.random()*0.5);
+  }
+  for (let i=0;i<30;i++){
+    const ang = Math.random()*Math.PI*2, rad = Math.random()*forestCenter.r*0.9;
+    const x = forestCenter.x + Math.cos(ang)*rad, z = forestCenter.z + Math.sin(ang)*rad;
+    makeForestTree(x,z, 0.7+Math.random()*0.5);
+  }
+  const escapeTree = makeAcacia(6, -10, 1.1);
+
+  const rocks = [];
+  for (let i=0;i<18;i++){
+    const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6+Math.random()*0.8), new THREE.MeshStandardMaterial({ color:0x8a8478, roughness:1 }));
+    const x=(Math.random()-0.5)*160, z=(Math.random()-0.5)*160;
+    r.position.set(x, 0.3, z);
+    r.castShadow = true;
+    r.userData = { type:'rock', radius:1.6, stoneCooldown:0 };
+    scene.add(r); rocks.push(r);
+  }
+
+  const player = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({ color:0x8a5a3a, roughness:0.9 });
+  const cloth = new THREE.MeshStandardMaterial({ color:0xb2492f, roughness:1 });
+
+  const torso = makeCapsule(0.28, 0.55, cloth);
+  torso.position.y = 1.15;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 10), skin);
+  head.position.y = 1.62;
+  head.castShadow = true;
+  const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.4,0.2), new THREE.MeshStandardMaterial({ color:0x6b4a2a }));
+  backpack.position.set(0, 1.15, -0.3);
+
+  const legL = new THREE.Group(); const legR = new THREE.Group();
+  legL.position.set(-0.14, 0.85, 0); legR.position.set(0.14, 0.85, 0);
+  const legMat = new THREE.MeshStandardMaterial({ color:0x4a3324, roughness:1 });
+  const legMeshL = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.7,6), legMat);
+  legMeshL.position.y = -0.35; legMeshL.castShadow = true;
+  const legMeshR = legMeshL.clone();
+  legL.add(legMeshL); legR.add(legMeshR);
+
+  const armL = new THREE.Group(); const armR = new THREE.Group();
+  armL.position.set(-0.32, 1.35, 0); armR.position.set(0.32, 1.35, 0);
+  const armMeshL = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.55,6), skin);
+  armMeshL.position.y = -0.27; armMeshL.castShadow = true;
+  const armMeshR = armMeshL.clone();
+  armL.add(armMeshL); armR.add(armMeshR);
+
+  player.add(torso, head, backpack, legL, legR, armL, armR);
+  player.position.set(0, 0, 0);
+  scene.add(player);
+
+  const playerState = {
+    speed: 4.2, sprintMult: 1.7, yaw: 0,
+    climbing:false, climbTarget:null, climbProgress:0,
+    health:100, stamina:100, dead:false,
+    lastJumpTime:-1,
+  };
+  let animTime = 0;
+  let moveFactor = 0;
+
+  let camYaw = Math.PI;
+  let camPitch = 0.35;
+  const camDist = 6.5;
+
+  const ANIMAL_DEFS = {
+    lion:   { predator:true,  speed:3.6, dmg:25, bodyColor:0xc9a15c, headColor:0xb88a4a, maneColor:0x7a4f28, size:1.0 },
+    hyena:  { predator:true,  speed:4.0, dmg:14, bodyColor:0x9a8f6a, headColor:0x8a7a55, maneColor:0x5a4f38, size:0.7 },
+    zebra:  { predator:false, speed:3.2, dmg:0,  bodyColor:0xe8e4d8, headColor:0xd8d4c8, maneColor:0x2a2a2a, size:1.1 },
+    gazelle:{ predator:false, speed:4.4, dmg:0,  bodyColor:0xc9a06a, headColor:0xb88a55, maneColor:0x8a6a44, size:0.8 },
+  };
+  const animals = [];
+  function spawnAnimal(type, x, z){
+    const def = ANIMAL_DEFS[type];
+    const g = new THREE.Group();
+    const body = makeCapsule(0.45*def.size, 1.0*def.size, new THREE.MeshStandardMaterial({ color:def.bodyColor, roughness:1 }));
+    body.rotation.z = Math.PI/2;
+    body.position.y = 0.55*def.size;
+    const headM = new THREE.Mesh(new THREE.SphereGeometry(0.35*def.size,10,10), new THREE.MeshStandardMaterial({ color:def.headColor, roughness:1 }));
+    headM.position.set(0.75*def.size, 0.65*def.size, 0);
+    g.add(body, headM);
+    if (def.predator){
+      const mane = new THREE.Mesh(new THREE.SphereGeometry(0.48*def.size,10,10), new THREE.MeshStandardMaterial({ color:def.maneColor, roughness:1 }));
+      mane.position.set(0.7*def.size, 0.6*def.size, 0);
+      mane.scale.set(0.9,0.9,0.9);
+      g.add(mane);
+    }
+    g.position.set(x,0,z);
+    scene.add(g);
+    const a = {
+      mesh:g, type, def, active:true, chasing:false, giveUpTimer:0,
+      wanderTarget:new THREE.Vector3(x + (Math.random()-0.5)*10, 0, z + (Math.random()-0.5)*10),
+      wanderTimer:2+Math.random()*3, fleeing:false,
+    };
+    animals.push(a);
+    return a;
+  }
+
+  const introLion = spawnAnimal('lion', -10, -14);
+  introLion.active = false; introLion.mesh.visible = false;
+
+  spawnAnimal('hyena', 25, 30);
+  spawnAnimal('hyena', -40, 20);
+  spawnAnimal('zebra', 30, -40);
+  spawnAnimal('zebra', -20, 40);
+  spawnAnimal('gazelle', 15, 50);
+  spawnAnimal('gazelle', -60, -10);
+  spawnAnimal('gazelle', 60, 30);
+
+  const inventory = { wood:0, stone:0, spear:0 };
+  const woodCountEl = document.getElementById('woodCount');
+  const stoneCountEl = document.getElementById('stoneCount');
+  const spearCountEl = document.getElementById('spearCount');
+  function refreshInventoryUI(){
+    woodCountEl.textContent = inventory.wood;
+    stoneCountEl.textContent = inventory.stone;
+    spearCountEl.textContent = inventory.spear;
+  }
+  const craftPanel = document.getElementById('craftPanel');
+  const craftSpearBtn = document.getElementById('craftSpearBtn');
+  function refreshCraftButtons(){
+    craftSpearBtn.disabled = !(inventory.wood>=2 && inventory.stone>=1);
+  }
+  document.getElementById('craftBtn').addEventListener('click', () => { refreshCraftButtons(); craftPanel.classList.add('show'); });
+  document.getElementById('craftBtn').addEventListener('touchstart', e => { e.preventDefault(); refreshCraftButtons(); craftPanel.classList.add('show'); }, {passive:false});
+  document.getElementById('closeCraft').addEventListener('click', () => craftPanel.classList.remove('show'));
+  craftSpearBtn.addEventListener('click', () => {
+    if (inventory.wood>=2 && inventory.stone>=1){
+      inventory.wood -= 2; inventory.stone -= 1; inventory.spear += 1;
+      refreshInventoryUI(); refreshCraftButtons();
+      showStory('Crafted a spear.', 1600);
+    }
+  });
+
+  const keys = {};
+  window.addEventListener('keydown', e => { keys[e.code]=true; if (e.code==='Space') tryJump(); });
+  window.addEventListener('keyup', e => keys[e.code]=false);
+
+  let joyDX=0, joyDY=0, joyActive=false, joyStartX=0, joyStartY=0;
+  const joyZone = document.getElementById('joystick-zone');
+  const joyBase = document.getElementById('joystick-base');
+  const joyStick = document.getElementById('joystick-stick');
+  joyZone.addEventListener('touchstart', e => {
+    const t = e.changedTouches[0];
+    joyActive=true; joyStartX=t.clientX; joyStartY=t.clientY;
+    joyBase.style.display='block'; joyBase.style.left=(t.clientX-50)+'px'; joyBase.style.top=(t.clientY-50)+'px';
+  });
+  joyZone.addEventListener('touchmove', e => {
+    if (!joyActive) return;
+    const t = e.changedTouches[0];
+    let dx=t.clientX-joyStartX, dy=t.clientY-joyStartY;
+    const max=46; const len=Math.hypot(dx,dy);
+    if (len>max){ dx=dx/len*max; dy=dy/len*max; }
+    joyDX=dx/max; joyDY=dy/max;
+    joyStick.style.left=(50+dx)+'px'; joyStick.style.top=(50+dy)+'px';
+    e.preventDefault();
+  }, {passive:false});
+  joyZone.addEventListener('touchend', () => {
+    joyActive=false; joyDX=0; joyDY=0; joyBase.style.display='none';
+    joyStick.style.left='50%'; joyStick.style.top='50%'; joyStick.style.transform='translate(-50%,-50%)';
+  });
+
+  const lookZone = document.getElementById('look-zone');
+  let lookId=null, lastLX=0, lastLY=0;
+  lookZone.addEventListener('touchstart', e => { const t=e.changedTouches[0]; lookId=t.identifier; lastLX=t.clientX; lastLY=t.clientY; });
+  lookZone.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches){
+      if (t.identifier===lookId){
+        camYaw -= (t.clientX-lastLX)*0.0055;
+        camPitch = Math.max(0.05, Math.min(0.9, camPitch - (t.clientY-lastLY)*0.0035));
+        lastLX=t.clientX; lastLY=t.clientY;
+      }
+    }
+    e.preventDefault();
+  }, {passive:false});
+  lookZone.addEventListener('touchend', e => { for (const t of e.changedTouches) if (t.identifier===lookId) lookId=null; });
+
+  let mouseDown=false, lastMX=0, lastMY=0;
+  renderer.domElement.addEventListener('mousedown', e => { mouseDown=true; lastMX=e.clientX; lastMY=e.clientY; });
+  window.addEventListener('mouseup', () => mouseDown=false);
+  window.addEventListener('mousemove', e => {
+    if (!mouseDown) return;
+    camYaw -= (e.clientX-lastMX)*0.005;
+    camPitch = Math.max(0.05, Math.min(0.9, camPitch - (e.clientY-lastMY)*0.003));
+    lastMX=e.clientX; lastMY=e.clientY;
+  });
+
+  let sprinting = false;
+  function bindHold(el, downFn, upFn){
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); downFn(); }, {passive:false});
+    el.addEventListener('touchend', e=>{ e.preventDefault(); if(upFn) upFn(); }, {passive:false});
+    el.addEventListener('mousedown', downFn);
+    el.addEventListener('mouseup', () => { if(upFn) upFn(); });
+  }
+  bindHold(document.getElementById('sprintBtn'), ()=>sprinting=true, ()=>sprinting=false);
+  document.getElementById('jumpBtn').addEventListener('touchstart', e=>{ e.preventDefault(); tryJump(); }, {passive:false});
+  document.getElementById('jumpBtn').addEventListener('click', tryJump);
+  document.getElementById('interactBtn').addEventListener('touchstart', e=>{ e.preventDefault(); tryInteract(); }, {passive:false});
+  document.getElementById('interactBtn').addEventListener('click', tryInteract);
+  window.addEventListener('keydown', e => { if (e.code==='KeyE') tryInteract(); if (e.code==='ShiftLeft') sprinting=true; if (e.code==='KeyC'){ refreshCraftButtons(); craftPanel.classList.toggle('show'); } });
+  window.addEventListener('keyup', e => { if (e.code==='ShiftLeft') sprinting=false; });
+
+  const promptBox = document.getElementById('promptBox');
+  function nearestClimbable(){
+    for (const t of trees){ if (player.position.distanceTo(t.position) < t.userData.radius + 1.3) return t; }
+    return null;
+  }
+  function nearestChoppable(){
+    for (const t of trees){ if (t.userData.woodCooldown<=0 && player.position.distanceTo(t.position) < t.userData.radius + 1.4) return t; }
+    return null;
+  }
+  function nearestRock(){
+    for (const r of rocks){ if (r.userData.stoneCooldown<=0 && player.position.distanceTo(r.position) < r.userData.radius + 1.2) return r; }
+    return null;
+  }
+
+  function tryJump(){
+    if (playerState.climbing || playerState.dead) return;
+    const now = performance.now();
+    const nearTree = nearestClimbable();
+    if (nearTree && now - playerState.lastJumpTime < 350){ startClimb(nearTree); }
+    playerState.lastJumpTime = now;
+  }
+  function startClimb(tree){ playerState.climbing=true; playerState.climbTarget=tree; playerState.climbProgress=0; }
+
+  function tryInteract(){
+    if (playerState.dead) return;
+    if (playerState.climbing){ playerState.climbing=false; playerState.climbTarget=null; return; }
+    const rock = nearestRock();
+    const tree = nearestChoppable();
+    if (rock){
+      rock.userData.stoneCooldown = 3;
+      inventory.stone += 1; refreshInventoryUI();
+      showStory('+1 Stone', 1000);
+      return;
+    }
+    if (tree){
+      tree.userData.woodCooldown = 3;
+      inventory.wood += 1; refreshInventoryUI();
+      showStory('+1 Wood', 1000);
+      return;
+    }
+  }
+
+  const storyLine = document.getElementById('storyLine');
+  function showStory(text, duration){
+    storyLine.textContent = text;
+    storyLine.classList.add('show');
+    setTimeout(() => storyLine.classList.remove('show'), duration);
+  }
+
+  let gameStarted = false;
+  let introPhase = 'gathering';
+
+  document.getElementById('enterBtn').addEventListener('click', () => {
+    try {
+      const el = document.documentElement;
+      const reqFs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+      if (reqFs) Promise.resolve(reqFs.call(el)).then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }).catch(()=>{});
+      else if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
+    } catch(e){}
+
+    document.getElementById('splash').style.display = 'none';
+    gameStarted = true;
+    document.getElementById('hud').classList.add('active');
+    if (isTouch) document.getElementById('controls').classList.add('active');
+    refreshInventoryUI();
+    setTimeout(() => showStory("Gathering firewood before the sun sets...", 3200), 600);
+    setTimeout(() => {
+      introLion.active = true; introLion.chasing = true; introLion.mesh.visible = true;
+      showStory("A lion has noticed you. RUN!", 3000);
+    }, 9000);
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  });
+
+  let dayTime = 0.35;
+  const dayLength = 240;
+  const timeLabel = document.getElementById('timeLabel');
+  const skyDay = new THREE.Color(0x8fc4e8);
+  const skySunset = new THREE.Color(0xe8935a);
+  const skyNight = new THREE.Color(0x0c1230);
+
+  function updateDayNight(dt){
+    dayTime += dt/dayLength;
+    if (dayTime > 1) dayTime -= 1;
+    let sky, label;
+    if (dayTime < 0.25){ sky = skyNight.clone().lerp(skyDay, dayTime/0.25); label='🌅 Dawn'; }
+    else if (dayTime < 0.7){ sky = skyDay.clone(); label='☀ Day'; }
+    else if (dayTime < 0.85){ sky = skyDay.clone().lerp(skySunset, (dayTime-0.7)/0.15); label='🌇 Dusk'; }
+    else { sky = skySunset.clone().lerp(skyNight, (dayTime-0.85)/0.15); label='🌙 Night'; }
+    scene.background = sky; scene.fog.color = sky;
+    const sunIntensity = 0.3 + 0.9*Math.max(0, Math.sin(dayTime*Math.PI*2 - Math.PI/2)*0.5+0.5);
+    sun.intensity = sunIntensity;
+    ambient.intensity = 0.25 + 0.4*Math.max(0, Math.sin(dayTime*Math.PI*2 - Math.PI/2)*0.5+0.5);
+    const angle = dayTime*Math.PI*2;
+    sun.position.set(Math.cos(angle)*60, Math.max(5,Math.sin(angle)*60), 20);
+    timeLabel.textContent = label;
+  }
+
+  const minimapCanvas = document.getElementById('minimapCanvas');
+  const mmCtx = minimapCanvas.getContext('2d');
+  const MM_RANGE = 60;
+  function drawMinimap(){
+    const w = minimapCanvas.width, h = minimapCanvas.height;
+    mmCtx.clearRect(0,0,w,h);
+    mmCtx.fillStyle = '#c7a35f';
+    mmCtx.fillRect(0,0,w,h);
+    const fx = w/2 + (forestCenter.x-player.position.x)/MM_RANGE*(w/2);
+    const fz = h/2 + (forestCenter.z-player.position.z)/MM_RANGE*(h/2);
+    mmCtx.fillStyle = 'rgba(58,74,44,0.85)';
+    mmCtx.beginPath(); mmCtx.arc(fx, fz, forestCenter.r/MM_RANGE*(w/2), 0, Math.PI*2); mmCtx.fill();
+    mmCtx.fillStyle = 'rgba(58,127,160,0.85)';
+    const rx = w/2 + (50-player.position.x)/MM_RANGE*(w/2);
+    mmCtx.fillRect(rx-4, 0, 8, h);
+    mmCtx.fillStyle = '#3a5a2a';
+    trees.forEach(t => {
+      const dx=(t.position.x-player.position.x), dz=(t.position.z-player.position.z);
+      if (Math.abs(dx)>MM_RANGE || Math.abs(dz)>MM_RANGE) return;
+      const px = w/2 + dx/MM_RANGE*(w/2), py = h/2 + dz/MM_RANGE*(h/2);
+      mmCtx.beginPath(); mmCtx.arc(px,py,2,0,Math.PI*2); mmCtx.fill();
+    });
+    animals.forEach(a => {
+      if (!a.active) return;
+      const dx=(a.mesh.position.x-player.position.x), dz=(a.mesh.position.z-player.position.z);
+      if (Math.abs(dx)>MM_RANGE || Math.abs(dz)>MM_RANGE) return;
+      const px = w/2 + dx/MM_RANGE*(w/2), py = h/2 + dz/MM_RANGE*(h/2);
+      mmCtx.fillStyle = a.def.predator ? '#d4433f' : '#e8c96a';
+      mmCtx.beginPath(); mmCtx.arc(px,py,3,0,Math.PI*2); mmCtx.fill();
+    });
+    mmCtx.save();
+    mmCtx.translate(w/2, h/2);
+    mmCtx.rotate(playerState.yaw);
+    mmCtx.fillStyle = '#e8b968';
+    mmCtx.beginPath();
+    mmCtx.moveTo(0,-6); mmCtx.lineTo(4,5); mmCtx.lineTo(-4,5); mmCtx.closePath(); mmCtx.fill();
+    mmCtx.restore();
+  }
+
+  const gameOverEl = document.getElementById('gameOver');
+  function die(){
+    playerState.dead = true;
+    gameStarted = false;
+    gameOverEl.classList.add('show');
+  }
+  document.getElementById('respawnBtn').addEventListener('click', () => location.reload());
+
+  const healthFill = document.getElementById('healthFill');
+  const staminaFill = document.getElementById('staminaFill');
+
+  let lastTime = 0;
+  function loop(t){
+    requestAnimationFrame(loop);
+    const dt = Math.min((t-lastTime)/1000, 0.05);
+    lastTime = t;
+    if (!gameStarted) return;
+    update(dt);
+    render();
+  }
+
+  function wander(a, dt){
+    a.wanderTimer -= dt;
+    if (a.wanderTimer <= 0){
+      a.wanderTarget.set(a.mesh.position.x + (Math.random()-0.5)*16, 0, a.mesh.position.z + (Math.random()-0.5)*16);
+      a.wanderTimer = 3+Math.random()*4;
+    }
+    const d = new THREE.Vector3().subVectors(a.wanderTarget, a.mesh.position);
+    d.y = 0;
+    if (d.length() > 0.5){
+      d.normalize();
+      a.mesh.position.addScaledVector(d, a.def.speed*0.35*dt);
+      a.mesh.rotation.y = Math.atan2(d.x, d.z) - Math.PI/2;
+    }
+  }
+
+  function update(dt){
+    updateDayNight(dt);
+    animTime += dt;
+
+    let mx=0, mz=0;
+    if (!isTouch){
+      if (keys['KeyW']) mz -= 1;
+      if (keys['KeyS']) mz += 1;
+      if (keys['KeyA']) mx -= 1;
+      if (keys['KeyD']) mx += 1;
+    } else { mx = joyDX; mz = joyDY; }
+    const inputLen = Math.hypot(mx,mz);
+    moveFactor = Math.min(1, moveFactor + (inputLen>0.05 ? dt*6 : -dt*6));
+    moveFactor = Math.max(0, moveFactor);
+
+    if (playerState.climbing){
+      playerState.climbProgress = Math.min(1, playerState.climbProgress + dt*0.9);
+      const tree = playerState.climbTarget;
+      player.position.x += (tree.position.x - player.position.x)*0.1;
+      player.position.z += (tree.position.z - player.position.z)*0.1;
+      player.position.y = playerState.climbProgress * tree.userData.height * 0.75;
+      if (playerState.climbProgress >= 1 && introPhase === 'chase'){
+        introPhase = 'climbed';
+        introLion.chasing = false;
+        showStory("You made it up the tree. The lion circles below...", 3500);
+        setTimeout(() => { introLion.giveUpTimer = 4; }, 2000);
+      }
+    } else {
+      if (inputLen > 0.05){
+        const nx = mx/Math.max(inputLen,1), nz = mz/Math.max(inputLen,1);
+        const forward = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
+        const right = new THREE.Vector3(Math.sin(camYaw+Math.PI/2), 0, Math.cos(camYaw+Math.PI/2));
+        const move = new THREE.Vector3();
+        move.addScaledVector(forward, -nz);
+        move.addScaledVector(right, nx);
+        move.normalize();
+        const spd = playerState.speed * (sprinting && playerState.stamina>0 ? playerState.sprintMult : 1) * Math.min(inputLen,1);
+        player.position.x += move.x*spd*dt;
+        player.position.z += move.z*spd*dt;
+        playerState.yaw = Math.atan2(move.x, move.z);
+        player.rotation.y = playerState.yaw;
+        if (sprinting && playerState.stamina>0) playerState.stamina = Math.max(0, playerState.stamina - 12*dt);
+      }
+      if (!sprinting) playerState.stamina = Math.min(100, playerState.stamina + 6*dt);
+      player.position.y = 0;
+
+      const swingSpeed = sprinting ? 14 : 9;
+      const swingAmt = 0.55 * moveFactor;
+      legL.rotation.x = Math.sin(animTime*swingSpeed) * swingAmt;
+      legR.rotation.x = -Math.sin(animTime*swingSpeed) * swingAmt;
+      armL.rotation.x = -Math.sin(animTime*swingSpeed) * swingAmt * 0.8;
+      armR.rotation.x = Math.sin(animTime*swingSpeed) * swingAmt * 0.8;
+    }
+
+    trees.forEach(t => { if (t.userData.woodCooldown>0) t.userData.woodCooldown -= dt; });
+    rocks.forEach(r => { if (r.userData.stoneCooldown>0) r.userData.stoneCooldown -= dt; });
+
+    healthFill.style.width = playerState.health+'%';
+    staminaFill.style.width = playerState.stamina+'%';
+
+    if (introPhase === 'gathering' && introLion.active) introPhase = 'chase';
+
+    const tree = nearestClimbable();
+    const choppable = nearestChoppable();
+    const rock = nearestRock();
+    if (playerState.climbing){ promptBox.textContent = 'Tap USE to climb down'; promptBox.classList.add('show'); }
+    else if (rock){ promptBox.textContent = 'Tap USE to gather stone'; promptBox.classList.add('show'); }
+    else if (choppable){ promptBox.textContent = 'Tap USE to gather wood'; promptBox.classList.add('show'); }
+    else if (tree && introPhase==='chase'){ promptBox.textContent = 'Double-tap JUMP to climb!'; promptBox.classList.add('show'); }
+    else { promptBox.classList.remove('show'); }
+
+    animals.forEach(a => {
+      if (!a.active) return;
+      const dir = new THREE.Vector3().subVectors(player.position, a.mesh.position);
+      dir.y = 0;
+      const dist = dir.length();
+
+      if (a.def.predator){
+        if (a.chasing){
+          dir.normalize();
+          a.mesh.position.addScaledVector(dir, a.def.speed*dt);
+          a.mesh.rotation.y = Math.atan2(dir.x, dir.z) - Math.PI/2;
+          if (dist < 1.8 && !playerState.climbing && !playerState.dead){
+            playerState.health = Math.max(0, playerState.health - a.def.dmg*dt);
+            if (playerState.health <= 0) die();
+          }
+          if (a !== introLion && dist > 22){ a.chasing = false; }
+        } else if (a.giveUpTimer > 0){
+          a.giveUpTimer -= dt;
+          if (a.giveUpTimer <= 0 && a === introLion){
+            introLion.active = false; introLion.mesh.visible = false;
+            introPhase = 'freeroam';
+            document.getElementById('objective').classList.add('show');
+            showStory("The lion has gone. You are alone, and lost.", 4500);
+          }
+        } else if (a !== introLion) {
+          if (dist < 14 && !playerState.climbing){ a.chasing = true; }
+          else { wander(a, dt); }
+        }
+      } else {
+        if (dist < 9){
+          dir.normalize();
+          a.mesh.position.addScaledVector(dir, -a.def.speed*dt);
+          a.mesh.rotation.y = Math.atan2(-dir.x, -dir.z) - Math.PI/2;
+        } else {
+          wander(a, dt);
+        }
+      }
+    });
+
+    drawMinimap();
+
+    const camX = player.position.x - Math.sin(camYaw)*camDist*Math.cos(camPitch);
+    const camZ = player.position.z - Math.cos(camYaw)*camDist*Math.cos(camPitch);
+    const camY = player.position.y + 2.0 + camDist*Math.sin(camPitch);
+    camera.position.lerp(new THREE.Vector3(camX,camY,camZ), 1 - Math.pow(0.001, dt));
+    camera.lookAt(player.position.x, player.position.y+1.2, player.position.z);
+  }
+
+  function render(){ renderer.render(scene, camera); }
+  renderer.render(scene, camera);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickPay — Pay. Send. Receive. Instantly.</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --navy:#0a1229;
+    --navy2:#0f1b3a;
+    --blue:#2f7bf6;
+    --blue-light:#5fa8ff;
+    --blue-pale:#eaf2ff;
+    --white:#ffffff;
+    --muted:#6b7280;
+    --card:#f4f7fc;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:'Poppins', sans-serif; background:var(--white); color:var(--navy); }
+  a{ text-decoration:none; color:inherit; }
+  .container{ max-width:1180px; margin:0 auto; padding:0 1.5rem; }
+
+  /* ================= PASSWORD GATE ================= */
+  #gate{
+    position:fixed; inset:0; z-index:100; background:var(--navy);
+    display:flex; align-items:center; justify-content:center; padding:2rem;
+  }
+  .gate-card{
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:18px; padding:2.4rem 2rem; max-width:340px; width:100%; text-align:center;
+  }
+  .gate-logo{ width:64px; height:64px; margin:0 auto 1rem; }
+  .gate-card h2{ color:var(--white); font-size:1.3rem; margin-bottom:0.4rem; }
+  .gate-card p{ color:#8b93ab; font-size:0.85rem; margin-bottom:1.6rem; }
+  .gate-card input{
+    width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+    border-radius:8px; padding:0.85rem 1rem; color:var(--white); font-size:1rem; text-align:center;
+    letter-spacing:0.15em; margin-bottom:1rem; outline:none; font-family:'Poppins', sans-serif;
+  }
+  .gate-card input::placeholder{ color:#565f78; letter-spacing:0.05em; }
+  .gate-card input:focus{ border-color:var(--blue-light); }
+  .gate-btn{
+    width:100%; background:linear-gradient(135deg, var(--blue-light), var(--blue));
+    border:none; color:#fff; font-weight:700; padding:0.9rem; border-radius:8px; font-size:0.95rem; cursor:pointer;
+  }
+  .gate-error{ color:#ff6b6b; font-size:0.8rem; margin-top:0.8rem; display:none; }
+  .gate-error.show{ display:block; }
+
+  /* ================= MAIN SITE (hidden until unlocked) ================= */
+  #site{ display:none; }
+  #site.show{ display:block; }
+
+  /* ---------- hero ---------- */
+  .hero{
+    background:linear-gradient(135deg, var(--navy), var(--navy2));
+    color:var(--white); padding:4.5rem 0 3.5rem; overflow:hidden; position:relative;
+  }
+  .hero-grid{ display:grid; grid-template-columns:1fr 0.9fr; gap:2.5rem; align-items:center; }
+  .logo-row{ display:flex; align-items:center; gap:0.9rem; margin-bottom:1.6rem; }
+  .logo-mark{ width:64px; height:64px; }
+  .logo-word{ font-size:2rem; font-weight:800; line-height:1; }
+  .logo-word .pay{ color:var(--blue-light); display:block; }
+  .hero p.tagline{ font-size:1.1rem; color:#b9c2d8; }
+  .hero p.tagline b{ color:var(--blue-light); }
+
+  .phone-hero{
+    background:var(--navy2); border:1px solid rgba(255,255,255,0.08); border-radius:34px;
+    padding:1.4rem; max-width:230px; margin:0 auto; box-shadow:0 40px 80px -20px rgba(0,0,0,0.6);
+  }
+  .phone-hero-inner{ text-align:center; padding-top:1rem; }
+  .phone-hero .plogo{ width:56px; height:56px; margin:0 auto 0.6rem; }
+  .phone-hero .ptitle{ font-weight:800; font-size:1.3rem; color:#fff; }
+  .phone-hero .psub{ color:var(--blue-light); font-size:0.85rem; margin-top:0.3rem; }
+  .phone-wave{ height:110px; margin-top:1.6rem; background:linear-gradient(180deg, transparent, rgba(47,123,246,0.5)); border-radius:0 0 20px 20px; }
+
+  /* ---------- overview ---------- */
+  .overview{ padding:4rem 0; }
+  .overview-grid{ display:grid; grid-template-columns:1fr 1.3fr; gap:3rem; align-items:start; }
+  .eyebrow{ color:var(--blue); font-weight:700; font-size:0.85rem; letter-spacing:0.06em; margin-bottom:0.6rem; }
+  .overview h2{ font-size:1.6rem; margin-bottom:0.9rem; }
+  .overview p{ color:var(--muted); font-size:0.95rem; line-height:1.7; margin-bottom:1.8rem; }
+
+  .icon-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.2rem; }
+  .icon-item{ text-align:center; }
+  .icon-circle{
+    width:52px; height:52px; border-radius:50%; background:var(--blue-pale); color:var(--blue);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 0.5rem; font-size:1.3rem;
+  }
+  .icon-item span{ font-size:0.78rem; color:var(--navy); font-weight:500; }
+
+  .phones-row{ display:flex; gap:1.2rem; overflow-x:auto; padding-bottom:0.5rem; }
+  .mini-phone{
+    background:var(--navy); border-radius:26px; padding:0.9rem; min-width:190px; flex-shrink:0;
+    box-shadow:0 25px 50px -15px rgba(0,0,0,0.25);
+  }
+  .mini-screen{ background:var(--white); border-radius:18px; padding:0.9rem; height:340px; overflow:hidden; position:relative; }
+  .mini-screen h4{ font-size:0.8rem; color:var(--navy); margin-bottom:0.6rem; }
+  .balance-card{ background:linear-gradient(135deg, var(--blue), var(--blue-light)); border-radius:10px; padding:0.8rem; color:#fff; margin-bottom:0.7rem; }
+  .balance-card .lbl{ font-size:0.6rem; opacity:0.85; }
+  .balance-card .amt{ font-size:1.1rem; font-weight:700; margin-top:0.1rem; }
+  .action-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; margin-bottom:0.7rem; }
+  .action-chip{ background:var(--card); border-radius:8px; padding:0.5rem; text-align:center; font-size:0.62rem; color:var(--navy); }
+  .tx-row{ display:flex; justify-content:space-between; font-size:0.6rem; padding:0.35rem 0; border-bottom:1px solid #eee; color:var(--navy); }
+  .tx-row .amt-pos{ color:#1fa855; } .tx-row .amt-neg{ color:#e0524a; }
+  .field-mini{ background:var(--card); border-radius:6px; padding:0.5rem 0.6rem; font-size:0.65rem; color:var(--muted); margin-bottom:0.5rem; }
+  .btn-mini{ background:var(--blue); color:#fff; border-radius:6px; padding:0.55rem; text-align:center; font-size:0.68rem; font-weight:600; }
+  .keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.3rem; margin-top:0.5rem; }
+  .keypad div{ background:var(--card); border-radius:5px; text-align:center; padding:0.35rem 0; font-size:0.62rem; }
+  .pay-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:0.4rem; }
+  .pay-icon{ background:var(--card); border-radius:8px; text-align:center; padding:0.5rem 0.2rem; font-size:0.6rem; color:var(--navy); }
+  .pay-icon .ic{ font-size:1rem; margin-bottom:0.2rem; }
+
+  /* ---------- QR scan-to-pay ---------- */
+  .qr-section{ background:var(--card); padding:4rem 0; }
+  .qr-grid{ display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:center; }
+  .qr-grid h2{ font-size:1.7rem; margin-bottom:0.9rem; }
+  .qr-grid p{ color:var(--muted); line-height:1.7; margin-bottom:1.2rem; }
+  .qr-steps{ list-style:none; }
+  .qr-steps li{ display:flex; gap:0.8rem; margin-bottom:0.9rem; font-size:0.9rem; }
+  .qr-steps .num{
+    width:26px; height:26px; border-radius:50%; background:var(--blue); color:#fff; font-size:0.75rem;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700;
+  }
+  .qr-box{
+    background:var(--navy); border-radius:20px; padding:2rem; text-align:center;
+  }
+  .qr-box #qrcode{ background:#fff; padding:1rem; border-radius:12px; display:inline-block; }
+  .qr-box .qr-label{ color:var(--blue-light); font-size:0.8rem; margin-top:1rem; }
+  .qr-box .qr-merchant{ color:#fff; font-weight:700; margin-top:0.2rem; }
+
+  /* ---------- feature strip ---------- */
+  .strip{ background:var(--navy); padding:2.2rem 0; }
+  .strip-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.5rem; }
+  .strip-item{ display:flex; gap:0.8rem; align-items:flex-start; color:#fff; }
+  .strip-item .ic{ font-size:1.3rem; color:var(--blue-light); }
+  .strip-item h4{ font-size:0.85rem; margin-bottom:0.2rem; }
+  .strip-item p{ font-size:0.72rem; color:#8b93ab; }
+
+  footer{ text-align:center; padding:1.6rem; color:var(--muted); font-size:0.8rem; }
+
+  @media (max-width:900px){
+    .hero-grid, .overview-grid, .qr-grid{ grid-template-columns:1fr; }
+    .icon-grid{ grid-template-columns:repeat(2,1fr); }
+    .strip-grid{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= PASSWORD GATE ================= -->
+<div id="gate">
+  <div class="gate-card">
+    <svg class="gate-logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="url(#g1)" stroke-width="14"/><polygon points="58,18 34,55 48,55 40,84 68,45 52,45" fill="#fff"/><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fa8ff"/><stop offset="1" stop-color="#2f7bf6"/></linearGradient></defs></svg>
+    <h2>QuickPay</h2>
+    <p>Enter the access password to view this project.</p>
+    <input type="password" id="gateInput" placeholder="PASSWORD" maxlength="20">
+    <button class="gate-btn" id="gateBtn">Unlock</button>
+    <div class="gate-error" id="gateError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ================= MAIN SITE ================= -->
+<div id="site">
+
+  <section class="hero">
+    <div class="container">
+      <a href="index.html" style="color:#8b93ab; font-size:0.8rem; display:inline-block; margin-bottom:1.4rem;">← Back to Raanix</a>
+    </div>
+    <div class="container hero-grid">
+      <div>
+        <div class="logo-row">
+          <svg class="logo-mark" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="url(#g2)" stroke-width="14"/><polygon points="58,18 34,55 48,55 40,84 68,45 52,45" fill="#fff"/><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fa8ff"/><stop offset="1" stop-color="#2f7bf6"/></linearGradient></defs></svg>
+          <div class="logo-word">Quick<span class="pay">Pay</span></div>
+        </div>
+        <p class="tagline">Pay <b>·</b> Send <b>·</b> Receive <b>Instantly</b></p>
+      </div>
+      <div class="phone-hero">
+        <div class="phone-hero-inner">
+          <svg class="plogo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="url(#g3)" stroke-width="14"/><polygon points="58,18 34,55 48,55 40,84 68,45 52,45" fill="#fff"/><defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fa8ff"/><stop offset="1" stop-color="#2f7bf6"/></linearGradient></defs></svg>
+          <div class="ptitle">Quick<span style="color:#5fa8ff">Pay</span></div>
+          <div class="psub">Pay. Send. Receive.<br>Instantly.</div>
+        </div>
+        <div class="phone-wave"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="overview">
+    <div class="container overview-grid">
+      <div>
+        <div class="eyebrow">APP OVERVIEW</div>
+        <h2>Sending money should feel instant.</h2>
+        <p>QuickPay makes sending, receiving, and managing money simple, fast, and secure — built for everyday payments, bills, and quick checkout.</p>
+        <div class="icon-grid">
+          <div class="icon-item"><div class="icon-circle">💸</div><span>Send Money</span></div>
+          <div class="icon-item"><div class="icon-circle">🧾</div><span>Pay Bills</span></div>
+          <div class="icon-item"><div class="icon-circle">📱</div><span>Airtime</span></div>
+          <div class="icon-item"><div class="icon-circle">🏦</div><span>Bank Transfer</span></div>
+          <div class="icon-item"><div class="icon-circle">🔒</div><span>Secure</span></div>
+          <div class="icon-item"><div class="icon-circle">⚡</div><span>Instant</span></div>
+          <div class="icon-item"><div class="icon-circle">🙂</div><span>Easy to Use</span></div>
+          <div class="icon-item"><div class="icon-circle">🌍</div><span>Works Everywhere</span></div>
+        </div>
+      </div>
+
+      <div class="phones-row">
+        <div class="mini-phone">
+          <div class="mini-screen">
+            <h4>Welcome Back</h4>
+            <div class="field-mini">+254 700 000 000</div>
+            <div class="field-mini">PIN ••••</div>
+            <div class="btn-mini">Login</div>
+          </div>
+        </div>
+        <div class="mini-phone">
+          <div class="mini-screen">
+            <div class="balance-card"><div class="lbl">Total Balance</div><div class="amt">KES 45,250.00</div></div>
+            <div class="action-grid">
+              <div class="action-chip">Send</div><div class="action-chip">Receive</div>
+              <div class="action-chip">Pay Bills</div><div class="action-chip">Airtime</div>
+            </div>
+            <div class="tx-row"><span>To Mary Wanjiku</span><span class="amt-neg">-1,500</span></div>
+            <div class="tx-row"><span>KPLC Tokens</span><span class="amt-neg">-500</span></div>
+            <div class="tx-row"><span>From John Doe</span><span class="amt-pos">+2,000</span></div>
+          </div>
+        </div>
+        <div class="mini-phone">
+          <div class="mini-screen">
+            <h4>Send Money</h4>
+            <div class="field-mini">Mary Wanjiku · +254 712 345 678</div>
+            <div class="field-mini">Amount: KES 1,500</div>
+            <div class="keypad">
+              <div>1</div><div>2</div><div>3</div>
+              <div>4</div><div>5</div><div>6</div>
+              <div>7</div><div>8</div><div>9</div>
+            </div>
+            <div class="btn-mini" style="margin-top:0.5rem;">Send Money</div>
+          </div>
+        </div>
+        <div class="mini-phone">
+          <div class="mini-screen">
+            <h4>Payments</h4>
+            <div class="pay-grid">
+              <div class="pay-icon"><div class="ic">📶</div>Airtime</div>
+              <div class="pay-icon"><div class="ic">💡</div>Electricity</div>
+              <div class="pay-icon"><div class="ic">💧</div>Water</div>
+              <div class="pay-icon"><div class="ic">🏫</div>School</div>
+              <div class="pay-icon"><div class="ic">🏥</div>Hospital</div>
+              <div class="pay-icon"><div class="ic">🅿️</div>Parking</div>
+            </div>
+            <div class="btn-mini" style="margin-top:0.7rem;">Pay bills instantly</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="qr-section">
+    <div class="container qr-grid">
+      <div>
+        <div class="eyebrow">SCAN TO PAY</div>
+        <h2>Built for checkout lines that move fast.</h2>
+        <p>No typing phone numbers, no mistakes — just scan and confirm. Perfect for restaurants and supermarkets that need the queue to keep moving.</p>
+        <ul class="qr-steps">
+          <li><div class="num">1</div><div>Merchant displays their QuickPay QR code at checkout.</div></li>
+          <li><div class="num">2</div><div>Customer opens QuickPay and scans it with their camera.</div></li>
+          <li><div class="num">3</div><div>The amount and merchant load automatically — no typing.</div></li>
+          <li><div class="num">4</div><div>Customer enters their password to confirm and pay.</div></li>
+        </ul>
+      </div>
+      <div class="qr-box">
+        <div id="qrcode"></div>
+        <div class="qr-label">Demo merchant code</div>
+        <div class="qr-merchant">Java House — Westlands</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="container strip-grid">
+      <div class="strip-item"><div class="ic">⚡</div><div><h4>Instant Payments</h4><p>Send & receive money in seconds</p></div></div>
+      <div class="strip-item"><div class="ic">🛡️</div><div><h4>Secure & Safe</h4><p>Your money and data are protected</p></div></div>
+      <div class="strip-item"><div class="ic">🕐</div><div><h4>24/7 Support</h4><p>We're here to help anytime</p></div></div>
+      <div class="strip-item"><div class="ic">🔗</div><div><h4>Works Everywhere</h4><p>Use it across all networks and banks</p></div></div>
+    </div>
+  </section>
+
+  <footer>&copy; 2026 QuickPay. Prototype for demonstration purposes.</footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const CORRECT_PASSWORD = "BETA";
+  const gateInput = document.getElementById('gateInput');
+  const gateBtn = document.getElementById('gateBtn');
+  const gateError = document.getElementById('gateError');
+
+  function tryUnlock(){
+    if (gateInput.value.trim().toUpperCase() === CORRECT_PASSWORD){
+      document.getElementById('gate').style.display = 'none';
+      const site = document.getElementById('site');
+      site.classList.add('show');
+      new QRCode(document.getElementById('qrcode'), {
+        text: "quickpay://pay?merchant=JavaHouseWestlands&amount=850",
+        width: 160, height: 160,
+        colorDark: "#0a1229", colorLight: "#ffffff"
+      });
+    } else {
+      gateError.classList.add('show');
+      gateInput.value = '';
+      gateInput.focus();
+    }
+  }
+  gateBtn.addEventListener('click', tryUnlock);
+  gateInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+</script>
+
+</body>
+</html>
